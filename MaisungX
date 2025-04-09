@@ -1,0 +1,188 @@
+-- // ตัวแปรพื้นฐาน
+local player = game.Players.LocalPlayer
+local speedEnabled = false
+local speedMultiplier = 11
+local speedConnection
+
+local function startSpeedHack()
+    speedConnection = game:GetService("RunService").Heartbeat:Connect(function(delta)
+        if player.Character and player.Character:FindFirstChild("Humanoid") then
+            if player.Character.Humanoid.MoveDirection.Magnitude > 0 then
+                player.Character:TranslateBy(player.Character.Humanoid.MoveDirection * speedMultiplier * delta * 10)
+            end
+        end
+    end)
+end
+
+local function stopSpeedHack()
+    if speedConnection then
+        speedConnection:Disconnect()
+        speedConnection = nil
+    end
+end
+
+-- UI เริ่มต้น
+local screenGui = Instance.new("ScreenGui", game.CoreGui)
+screenGui.Name = "SpeedHack_UI"
+screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+local frame = Instance.new("Frame", screenGui)
+frame.Size = UDim2.new(0, 320, 0, 180)
+frame.Position = UDim2.new(0, 100, 0, 100)
+frame.BackgroundColor3 = Color3.fromRGB(24, 24, 24)
+frame.BorderSizePixel = 0
+frame.Active = true
+frame.Draggable = true
+
+local cornerFrame = Instance.new("UICorner", frame)
+cornerFrame.CornerRadius = UDim.new(0, 12)
+
+-- ปุ่มปิด
+local closeButton = Instance.new("TextButton", frame)
+closeButton.Size = UDim2.new(0, 25, 0, 25)  -- ปรับขนาดปุ่มปิด
+closeButton.Position = UDim2.new(1, -32, 0, 8)
+closeButton.Text = "x"
+closeButton.TextSize = 24
+closeButton.Font = Enum.Font.GothamBold
+closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+closeButton.BackgroundColor3 = Color3.fromRGB(255, 50, 50)  -- สีพื้นหลัง
+closeButton.BorderSizePixel = 2  -- ขอบของปุ่ม
+closeButton.BorderColor3 = Color3.fromRGB(255, 255, 255)  -- ขอบสีขาว
+
+-- ใช้ UICorner เพื่อทำให้ปุ่มปิดเป็นวงกลม
+local cornerCloseButton = Instance.new("UICorner", closeButton)
+cornerCloseButton.CornerRadius = UDim.new(1, 0)  -- ทำให้ปุ่มปิดกลม
+
+closeButton.MouseButton1Click:Connect(function()
+    stopSpeedHack()
+    screenGui:Destroy()
+end)
+
+
+
+-- หัวข้อ
+local title = Instance.new("TextLabel", frame)
+title.Text = "⚡ SpeedHack วิ่งตีนแตก"
+title.Size = UDim2.new(1, -40, 0, 30)
+title.Position = UDim2.new(0, 16, 0, 12)
+title.BackgroundTransparency = 1
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 20
+title.TextXAlignment = Enum.TextXAlignment.Left
+
+-- สไลเดอร์
+local sliderLabel = Instance.new("TextLabel", frame)
+sliderLabel.Text = "ปรับค่า Speed "
+sliderLabel.Position = UDim2.new(0, 16, 0, 50)
+sliderLabel.Size = UDim2.new(1, -32, 0, 20)
+sliderLabel.BackgroundTransparency = 1
+sliderLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+sliderLabel.Font = Enum.Font.Gotham
+sliderLabel.TextSize = 14
+sliderLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+local sliderBar = Instance.new("Frame", frame)
+sliderBar.Position = UDim2.new(0, 16, 0, 75)
+sliderBar.Size = UDim2.new(1, -32, 0, 8)
+sliderBar.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+sliderBar.BorderSizePixel = 0
+Instance.new("UICorner", sliderBar).CornerRadius = UDim.new(0, 4)
+
+local sliderFill = Instance.new("Frame", sliderBar)
+sliderFill.Size = UDim2.new((speedMultiplier - 1)/15, 0, 1, 0)
+sliderFill.BackgroundColor3 = Color3.fromRGB(46, 204, 113)
+sliderFill.BorderSizePixel = 0
+Instance.new("UICorner", sliderFill).CornerRadius = UDim.new(0, 4)
+
+local sliderKnob = Instance.new("TextButton", sliderBar)
+sliderKnob.Size = UDim2.new(0, 14, 2, 0)
+sliderKnob.Position = UDim2.new((speedMultiplier - 1)/15, -7, -0.5, 0)
+sliderKnob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+sliderKnob.Text = ""
+sliderKnob.AutoButtonColor = false
+Instance.new("UICorner", sliderKnob).CornerRadius = UDim.new(1, 0)
+
+local valueLabel = Instance.new("TextLabel", frame)
+valueLabel.Text = tostring(speedMultiplier)
+valueLabel.Position = UDim2.new(0, 16, 0, 95)
+valueLabel.Size = UDim2.new(1, -32, 0, 20)
+valueLabel.BackgroundTransparency = 1
+valueLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+valueLabel.Font = Enum.Font.GothamBold
+valueLabel.TextSize = 16
+valueLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+-- Toggle switch
+local toggleLabel = Instance.new("TextLabel", frame)
+toggleLabel.Text = "เปิดโหมด SpeedHack"
+toggleLabel.Position = UDim2.new(0, 16, 0, 125)
+toggleLabel.Size = UDim2.new(0.7, 0, 0, 24)
+toggleLabel.BackgroundTransparency = 1
+toggleLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+toggleLabel.Font = Enum.Font.Gotham
+toggleLabel.TextSize = 14
+toggleLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+local toggle = Instance.new("TextButton", frame)
+toggle.Position = UDim2.new(1, -60, 0, 125)
+toggle.Size = UDim2.new(0, 40, 0, 24)
+toggle.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+toggle.Text = ""
+toggle.BorderSizePixel = 0
+Instance.new("UICorner", toggle).CornerRadius = UDim.new(1, 0)
+
+local toggleCircle = Instance.new("Frame", toggle)
+toggleCircle.Size = UDim2.new(0.5, -4, 1, -4)
+toggleCircle.Position = UDim2.new(0, 2, 0, 2)
+toggleCircle.BackgroundColor3 = Color3.new(1, 1, 1)
+toggleCircle.BorderSizePixel = 0
+Instance.new("UICorner", toggleCircle).CornerRadius = UDim.new(1, 0)
+
+local function updateToggleUI()
+    if speedEnabled then
+        toggle.BackgroundColor3 = Color3.fromRGB(46, 204, 113)
+        toggleCircle:TweenPosition(UDim2.new(0.5, 2, 0, 2), "Out", "Quad", 0.2, true)
+    else
+        toggle.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+        toggleCircle:TweenPosition(UDim2.new(0, 2, 0, 2), "Out", "Quad", 0.2, true)
+    end
+end
+
+toggle.MouseButton1Click:Connect(function()
+    speedEnabled = not speedEnabled
+    updateToggleUI()
+    if speedEnabled then
+        startSpeedHack()
+    else
+        stopSpeedHack()
+    end
+end)
+
+updateToggleUI()
+
+-- Slider dragging
+local dragging = false
+sliderKnob.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+    end
+end)
+
+game:GetService("UserInputService").InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = false
+    end
+end)
+
+game:GetService("UserInputService").InputChanged:Connect(function(input)
+    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local rel = (input.Position.X - sliderBar.AbsolutePosition.X) / sliderBar.AbsoluteSize.X
+        rel = math.clamp(rel, 0, 1)
+        local val = math.floor(1 + rel * 15 + 0.5)
+        speedMultiplier = val
+        sliderFill.Size = UDim2.new((val - 1) / 15, 0, 1, 0)
+        sliderKnob.Position = UDim2.new((val - 1) / 15, -7, -0.5, 0)
+        valueLabel.Text = tostring(val)
+    end
+end)

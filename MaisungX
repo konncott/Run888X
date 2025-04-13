@@ -1,8 +1,10 @@
--- // ตัวแปรพื้นฐาน
+-- ✅ SpeedHack UI | รองรับมือถือ + พับ UI แล้วซ่อนองค์ประกอบ
 local player = game.Players.LocalPlayer
 local speedEnabled = false
 local speedMultiplier = 11
 local speedConnection
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
 
 local function startSpeedHack()
     speedConnection = game:GetService("RunService").Heartbeat:Connect(function(delta)
@@ -21,7 +23,7 @@ local function stopSpeedHack()
     end
 end
 
--- UI เริ่มต้น
+-- UI
 local screenGui = Instance.new("ScreenGui", game.CoreGui)
 screenGui.Name = "SpeedHack_UI"
 screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
@@ -33,32 +35,41 @@ frame.BackgroundColor3 = Color3.fromRGB(24, 24, 24)
 frame.BorderSizePixel = 0
 frame.Active = true
 frame.Draggable = true
-
-local cornerFrame = Instance.new("UICorner", frame)
-cornerFrame.CornerRadius = UDim.new(0, 12)
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 12)
 
 -- ปุ่มปิด
 local closeButton = Instance.new("TextButton", frame)
-closeButton.Size = UDim2.new(0, 25, 0, 25)  -- ปรับขนาดปุ่มปิด
+closeButton.Size = UDim2.new(0, 25, 0, 25)
 closeButton.Position = UDim2.new(1, -32, 0, 8)
 closeButton.Text = "x"
 closeButton.TextSize = 24
 closeButton.Font = Enum.Font.GothamBold
 closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-closeButton.BackgroundColor3 = Color3.fromRGB(255, 50, 50)  -- สีพื้นหลัง
-closeButton.BorderSizePixel = 2  -- ขอบของปุ่ม
-closeButton.BorderColor3 = Color3.fromRGB(255, 255, 255)  -- ขอบสีขาว
-
--- ใช้ UICorner เพื่อทำให้ปุ่มปิดเป็นวงกลม
-local cornerCloseButton = Instance.new("UICorner", closeButton)
-cornerCloseButton.CornerRadius = UDim.new(1, 0)  -- ทำให้ปุ่มปิดกลม
+closeButton.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+closeButton.BorderSizePixel = 2
+closeButton.BorderColor3 = Color3.fromRGB(255, 255, 255)
+Instance.new("UICorner", closeButton).CornerRadius = UDim.new(1, 0)
 
 closeButton.MouseButton1Click:Connect(function()
     stopSpeedHack()
     screenGui:Destroy()
 end)
 
+-- ปุ่มพับ UI
+local isMinimized = false
+local contentHeight = 180
 
+local minimizeButton = Instance.new("TextButton", frame)
+minimizeButton.Size = UDim2.new(0, 25, 0, 25)
+minimizeButton.Position = UDim2.new(1, -64, 0, 8)
+minimizeButton.Text = "-"
+minimizeButton.TextSize = 20
+minimizeButton.Font = Enum.Font.GothamBold
+minimizeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+minimizeButton.BackgroundColor3 = Color3.fromRGB(100, 100, 255)
+minimizeButton.BorderSizePixel = 2
+minimizeButton.BorderColor3 = Color3.fromRGB(255, 255, 255)
+Instance.new("UICorner", minimizeButton).CornerRadius = UDim.new(1, 0)
 
 -- หัวข้อ
 local title = Instance.new("TextLabel", frame)
@@ -73,7 +84,7 @@ title.TextXAlignment = Enum.TextXAlignment.Left
 
 -- สไลเดอร์
 local sliderLabel = Instance.new("TextLabel", frame)
-sliderLabel.Text = "ปรับค่า Speed "
+sliderLabel.Text = "ปรับค่า Speed"
 sliderLabel.Position = UDim2.new(0, 16, 0, 50)
 sliderLabel.Size = UDim2.new(1, -32, 0, 20)
 sliderLabel.BackgroundTransparency = 1
@@ -113,7 +124,7 @@ valueLabel.Font = Enum.Font.GothamBold
 valueLabel.TextSize = 16
 valueLabel.TextXAlignment = Enum.TextXAlignment.Left
 
--- Toggle switch
+-- Toggle UI
 local toggleLabel = Instance.new("TextLabel", frame)
 toggleLabel.Text = "เปิดโหมด SpeedHack"
 toggleLabel.Position = UDim2.new(0, 16, 0, 125)
@@ -161,22 +172,49 @@ end)
 
 updateToggleUI()
 
--- Slider dragging
+-- ✅ ฟังก์ชันพับ/ขยาย + ซ่อน UI อื่น
+minimizeButton.MouseButton1Click:Connect(function()
+    isMinimized = not isMinimized
+    if isMinimized then
+        minimizeButton.Text = "-"
+        TweenService:Create(frame, TweenInfo.new(0.3), { Size = UDim2.new(0, 320, 0, 50) }):Play()
+        sliderLabel.Visible = false
+        sliderBar.Visible = false
+        sliderFill.Visible = false
+        sliderKnob.Visible = false
+        valueLabel.Visible = false
+        toggle.Visible = false
+        toggleLabel.Visible = false
+    else
+        minimizeButton.Text = "-"
+        TweenService:Create(frame, TweenInfo.new(0.3), { Size = UDim2.new(0, 320, 0, contentHeight) }):Play()
+        sliderLabel.Visible = true
+        sliderBar.Visible = true
+        sliderFill.Visible = true
+        sliderKnob.Visible = true
+        valueLabel.Visible = true
+        toggle.Visible = true
+        toggleLabel.Visible = true
+    end
+end)
+
+-- 🎯 Drag Slider (มือถือ/PC)
 local dragging = false
+
 sliderKnob.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         dragging = true
     end
 end)
 
-game:GetService("UserInputService").InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         dragging = false
     end
 end)
 
-game:GetService("UserInputService").InputChanged:Connect(function(input)
-    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+UserInputService.InputChanged:Connect(function(input)
+    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
         local rel = (input.Position.X - sliderBar.AbsolutePosition.X) / sliderBar.AbsoluteSize.X
         rel = math.clamp(rel, 0, 1)
         local val = math.floor(1 + rel * 15 + 0.5)

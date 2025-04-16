@@ -1,4 +1,4 @@
--- ✅ SpeedHack UI | รองรับมือถือ + พับ UI แล้วซ่อนองค์ประกอบ
+-- ✅ SpeedHack UI | พร้อมระบบตั้งคีย์ลัด + รองรับมือถือ
 local player = game.Players.LocalPlayer
 local speedEnabled = false
 local speedMultiplier = 11
@@ -29,7 +29,7 @@ screenGui.Name = "SpeedHack_UI"
 screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
 local frame = Instance.new("Frame", screenGui)
-frame.Size = UDim2.new(0, 320, 0, 180)
+frame.Size = UDim2.new(0, 320, 0, 200)
 frame.Position = UDim2.new(0, 100, 0, 100)
 frame.BackgroundColor3 = Color3.fromRGB(24, 24, 24)
 frame.BorderSizePixel = 0
@@ -57,7 +57,7 @@ end)
 
 -- ปุ่มพับ UI
 local isMinimized = false
-local contentHeight = 180
+local contentHeight = 200
 
 local minimizeButton = Instance.new("TextButton", frame)
 minimizeButton.Size = UDim2.new(0, 25, 0, 25)
@@ -82,7 +82,7 @@ title.Font = Enum.Font.GothamBold
 title.TextSize = 20
 title.TextXAlignment = Enum.TextXAlignment.Left
 
--- สไลเดอร์
+-- Slider
 local sliderLabel = Instance.new("TextLabel", frame)
 sliderLabel.Text = "ปรับค่า Speed"
 sliderLabel.Position = UDim2.new(0, 16, 0, 50)
@@ -124,7 +124,7 @@ valueLabel.Font = Enum.Font.GothamBold
 valueLabel.TextSize = 16
 valueLabel.TextXAlignment = Enum.TextXAlignment.Left
 
--- Toggle UI
+-- Toggle
 local toggleLabel = Instance.new("TextLabel", frame)
 toggleLabel.Text = "เปิดโหมด SpeedHack"
 toggleLabel.Position = UDim2.new(0, 16, 0, 125)
@@ -172,47 +172,53 @@ end)
 
 updateToggleUI()
 
--- ✅ ฟังก์ชันพับ/ขยาย + ซ่อน UI อื่น
-minimizeButton.MouseButton1Click:Connect(function()
-    isMinimized = not isMinimized
-    if isMinimized then
-        minimizeButton.Text = "-"
-        TweenService:Create(frame, TweenInfo.new(0.3), { Size = UDim2.new(0, 320, 0, 50) }):Play()
-        sliderLabel.Visible = false
-        sliderBar.Visible = false
-        sliderFill.Visible = false
-        sliderKnob.Visible = false
-        valueLabel.Visible = false
-        toggle.Visible = false
-        toggleLabel.Visible = false
-    else
-        minimizeButton.Text = "-"
-        TweenService:Create(frame, TweenInfo.new(0.3), { Size = UDim2.new(0, 320, 0, contentHeight) }):Play()
-        sliderLabel.Visible = true
-        sliderBar.Visible = true
-        sliderFill.Visible = true
-        sliderKnob.Visible = true
-        valueLabel.Visible = true
-        toggle.Visible = true
-        toggleLabel.Visible = true
-    end
-end)
+-- 🧲 Keybind UI
+local keyBindLabel = Instance.new("TextLabel", frame)
+keyBindLabel.Text = "ตั้งค่าคีย์ลัด:"
+keyBindLabel.Position = UDim2.new(0, 16, 0, 155)
+keyBindLabel.Size = UDim2.new(0, 100, 0, 20)
+keyBindLabel.BackgroundTransparency = 1
+keyBindLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+keyBindLabel.Font = Enum.Font.Gotham
+keyBindLabel.TextSize = 14
+keyBindLabel.TextXAlignment = Enum.TextXAlignment.Left
 
--- 🎯 Drag Slider (มือถือ/PC)
+local keyBox = Instance.new("TextBox", frame)
+keyBox.Position = UDim2.new(0, 120, 0, 153)
+keyBox.Size = UDim2.new(0, 50, 0, 24)
+keyBox.PlaceholderText = "Key"
+keyBox.Text = "F"
+keyBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+keyBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+keyBox.ClearTextOnFocus = false
+keyBox.Font = Enum.Font.Gotham
+keyBox.TextSize = 14
+keyBox.BorderSizePixel = 0
+Instance.new("UICorner", keyBox).CornerRadius = UDim.new(0, 4)
+
+local applyKeyBtn = Instance.new("TextButton", frame)
+applyKeyBtn.Position = UDim2.new(0, 180, 0, 153)
+applyKeyBtn.Size = UDim2.new(0, 50, 0, 24)
+applyKeyBtn.Text = "Set"
+applyKeyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+applyKeyBtn.BackgroundColor3 = Color3.fromRGB(50, 150, 255)
+applyKeyBtn.Font = Enum.Font.GothamBold
+applyKeyBtn.TextSize = 14
+applyKeyBtn.BorderSizePixel = 0
+Instance.new("UICorner", applyKeyBtn).CornerRadius = UDim.new(0, 4)
+
+-- 📦 Slider dragging (มือถือ/PC)
 local dragging = false
-
 sliderKnob.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         dragging = true
     end
 end)
-
 UserInputService.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         dragging = false
     end
 end)
-
 UserInputService.InputChanged:Connect(function(input)
     if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
         local rel = (input.Position.X - sliderBar.AbsolutePosition.X) / sliderBar.AbsoluteSize.X
@@ -222,5 +228,52 @@ UserInputService.InputChanged:Connect(function(input)
         sliderFill.Size = UDim2.new((val - 1) / 15, 0, 1, 0)
         sliderKnob.Position = UDim2.new((val - 1) / 15, -7, -0.5, 0)
         valueLabel.Text = tostring(val)
+    end
+end)
+
+-- 🔑 ระบบ Hotkey
+local hotkey = Enum.KeyCode.F
+applyKeyBtn.MouseButton1Click:Connect(function()
+    local keyText = keyBox.Text:upper()
+    local keyCode = Enum.KeyCode[keyText]
+    if keyCode then
+        hotkey = keyCode
+        keyBox.Text = keyText
+    else
+        keyBox.Text = "F"
+        hotkey = Enum.KeyCode.F
+    end
+end)
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.KeyCode == hotkey then
+        speedEnabled = not speedEnabled
+        updateToggleUI()
+        if speedEnabled then
+            startSpeedHack()
+        else
+            stopSpeedHack()
+        end
+    end
+end)
+
+-- 🪄 พับ UI
+minimizeButton.MouseButton1Click:Connect(function()
+    isMinimized = not isMinimized
+    if isMinimized then
+        minimizeButton.Text = "+"
+        TweenService:Create(frame, TweenInfo.new(0.3), { Size = UDim2.new(0, 320, 0, 50) }):Play()
+        for _, child in ipairs(frame:GetChildren()) do
+            if child ~= minimizeButton and child ~= closeButton and child ~= title then
+                child.Visible = false
+            end
+        end
+    else
+        minimizeButton.Text = "-"
+        TweenService:Create(frame, TweenInfo.new(0.3), { Size = UDim2.new(0, 320, 0, contentHeight) }):Play()
+        for _, child in ipairs(frame:GetChildren()) do
+            child.Visible = true
+        end
     end
 end)

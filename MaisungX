@@ -1,4 +1,4 @@
--- ✅ SpeedHack UI | พร้อมระบบตั้งคีย์ลัด + รองรับมือถือ
+-- ✅ SpeedHack UI | พร้อมตั้งคีย์ลัด + ซ่อนครบเมื่อพับ UI
 local player = game.Players.LocalPlayer
 local speedEnabled = false
 local speedMultiplier = 11
@@ -29,7 +29,7 @@ screenGui.Name = "SpeedHack_UI"
 screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
 local frame = Instance.new("Frame", screenGui)
-frame.Size = UDim2.new(0, 320, 0, 200)
+frame.Size = UDim2.new(0, 320, 0, 210)
 frame.Position = UDim2.new(0, 100, 0, 100)
 frame.BackgroundColor3 = Color3.fromRGB(24, 24, 24)
 frame.BorderSizePixel = 0
@@ -37,7 +37,6 @@ frame.Active = true
 frame.Draggable = true
 Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 12)
 
--- ปุ่มปิด
 local closeButton = Instance.new("TextButton", frame)
 closeButton.Size = UDim2.new(0, 25, 0, 25)
 closeButton.Position = UDim2.new(1, -32, 0, 8)
@@ -55,10 +54,6 @@ closeButton.MouseButton1Click:Connect(function()
     screenGui:Destroy()
 end)
 
--- ปุ่มพับ UI
-local isMinimized = false
-local contentHeight = 200
-
 local minimizeButton = Instance.new("TextButton", frame)
 minimizeButton.Size = UDim2.new(0, 25, 0, 25)
 minimizeButton.Position = UDim2.new(1, -64, 0, 8)
@@ -71,7 +66,6 @@ minimizeButton.BorderSizePixel = 2
 minimizeButton.BorderColor3 = Color3.fromRGB(255, 255, 255)
 Instance.new("UICorner", minimizeButton).CornerRadius = UDim.new(1, 0)
 
--- หัวข้อ
 local title = Instance.new("TextLabel", frame)
 title.Text = "⚡ SpeedHack วิ่งตีนแตก"
 title.Size = UDim2.new(1, -40, 0, 30)
@@ -82,7 +76,6 @@ title.Font = Enum.Font.GothamBold
 title.TextSize = 20
 title.TextXAlignment = Enum.TextXAlignment.Left
 
--- Slider
 local sliderLabel = Instance.new("TextLabel", frame)
 sliderLabel.Text = "ปรับค่า Speed"
 sliderLabel.Position = UDim2.new(0, 16, 0, 50)
@@ -124,7 +117,6 @@ valueLabel.Font = Enum.Font.GothamBold
 valueLabel.TextSize = 16
 valueLabel.TextXAlignment = Enum.TextXAlignment.Left
 
--- Toggle
 local toggleLabel = Instance.new("TextLabel", frame)
 toggleLabel.Text = "เปิดโหมด SpeedHack"
 toggleLabel.Position = UDim2.new(0, 16, 0, 125)
@@ -150,29 +142,6 @@ toggleCircle.BackgroundColor3 = Color3.new(1, 1, 1)
 toggleCircle.BorderSizePixel = 0
 Instance.new("UICorner", toggleCircle).CornerRadius = UDim.new(1, 0)
 
-local function updateToggleUI()
-    if speedEnabled then
-        toggle.BackgroundColor3 = Color3.fromRGB(46, 204, 113)
-        toggleCircle:TweenPosition(UDim2.new(0.5, 2, 0, 2), "Out", "Quad", 0.2, true)
-    else
-        toggle.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
-        toggleCircle:TweenPosition(UDim2.new(0, 2, 0, 2), "Out", "Quad", 0.2, true)
-    end
-end
-
-toggle.MouseButton1Click:Connect(function()
-    speedEnabled = not speedEnabled
-    updateToggleUI()
-    if speedEnabled then
-        startSpeedHack()
-    else
-        stopSpeedHack()
-    end
-end)
-
-updateToggleUI()
-
--- 🧲 Keybind UI
 local keyBindLabel = Instance.new("TextLabel", frame)
 keyBindLabel.Text = "ตั้งค่าคีย์ลัด:"
 keyBindLabel.Position = UDim2.new(0, 16, 0, 155)
@@ -207,7 +176,29 @@ applyKeyBtn.TextSize = 14
 applyKeyBtn.BorderSizePixel = 0
 Instance.new("UICorner", applyKeyBtn).CornerRadius = UDim.new(0, 4)
 
--- 📦 Slider dragging (มือถือ/PC)
+local function updateToggleUI()
+    if speedEnabled then
+        toggle.BackgroundColor3 = Color3.fromRGB(46, 204, 113)
+        toggleCircle:TweenPosition(UDim2.new(0.5, 2, 0, 2), "Out", "Quad", 0.2, true)
+    else
+        toggle.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+        toggleCircle:TweenPosition(UDim2.new(0, 2, 0, 2), "Out", "Quad", 0.2, true)
+    end
+end
+
+toggle.MouseButton1Click:Connect(function()
+    speedEnabled = not speedEnabled
+    updateToggleUI()
+    if speedEnabled then
+        startSpeedHack()
+    else
+        stopSpeedHack()
+    end
+end)
+
+updateToggleUI()
+
+-- 📦 Slider drag
 local dragging = false
 sliderKnob.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -231,7 +222,31 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
--- 🔑 ระบบ Hotkey
+-- 🪄 พับ UI และซ่อนส่วนอื่น
+local isMinimized = false
+minimizeButton.MouseButton1Click:Connect(function()
+    isMinimized = not isMinimized
+    if isMinimized then
+        minimizeButton.Text = "+"
+        TweenService:Create(frame, TweenInfo.new(0.3), { Size = UDim2.new(0, 320, 0, 50) }):Play()
+    else
+        minimizeButton.Text = "-"
+        TweenService:Create(frame, TweenInfo.new(0.3), { Size = UDim2.new(0, 320, 0, 210) }):Play()
+    end
+    -- ซ่อน/แสดง UI ย่อย
+    sliderLabel.Visible = not isMinimized
+    sliderBar.Visible = not isMinimized
+    sliderFill.Visible = not isMinimized
+    sliderKnob.Visible = not isMinimized
+    valueLabel.Visible = not isMinimized
+    toggle.Visible = not isMinimized
+    toggleLabel.Visible = not isMinimized
+    keyBox.Visible = not isMinimized
+    keyBindLabel.Visible = not isMinimized
+    applyKeyBtn.Visible = not isMinimized
+end)
+
+-- 🔑 Keybind
 local hotkey = Enum.KeyCode.F
 applyKeyBtn.MouseButton1Click:Connect(function()
     local keyText = keyBox.Text:upper()
@@ -254,26 +269,6 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
             startSpeedHack()
         else
             stopSpeedHack()
-        end
-    end
-end)
-
--- 🪄 พับ UI
-minimizeButton.MouseButton1Click:Connect(function()
-    isMinimized = not isMinimized
-    if isMinimized then
-        minimizeButton.Text = "+"
-        TweenService:Create(frame, TweenInfo.new(0.3), { Size = UDim2.new(0, 320, 0, 50) }):Play()
-        for _, child in ipairs(frame:GetChildren()) do
-            if child ~= minimizeButton and child ~= closeButton and child ~= title then
-                child.Visible = false
-            end
-        end
-    else
-        minimizeButton.Text = "-"
-        TweenService:Create(frame, TweenInfo.new(0.3), { Size = UDim2.new(0, 320, 0, contentHeight) }):Play()
-        for _, child in ipairs(frame:GetChildren()) do
-            child.Visible = true
         end
     end
 end)

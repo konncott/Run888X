@@ -1,84 +1,119 @@
--- ✅ SpeedHack UI | พร้อมตั้งคีย์ลัด + ซ่อนครบเมื่อพับ UI
 local player = game.Players.LocalPlayer
-local speedEnabled = false
-local speedMultiplier = 11
-local speedConnection
-local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
 
-local function startSpeedHack()
-    speedConnection = game:GetService("RunService").Heartbeat:Connect(function(delta)
-        if player.Character and player.Character:FindFirstChild("Humanoid") then
-            if player.Character.Humanoid.MoveDirection.Magnitude > 0 then
-                player.Character:TranslateBy(player.Character.Humanoid.MoveDirection * speedMultiplier * delta * 10)
-            end
-        end
-    end)
+-- 🟩 อัปเดต toggle สีเขียว/เทา
+local function updateToggle(toggleBtn, circle, state)
+	if state then
+		toggleBtn.BackgroundColor3 = Color3.fromRGB(46, 204, 113)
+		circle:TweenPosition(UDim2.new(0.5, 2, 0, 2), "Out", "Quad", 0.2, true)
+	else
+		toggleBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+		circle:TweenPosition(UDim2.new(0, 2, 0, 2), "Out", "Quad", 0.2, true)
+	end
 end
 
-local function stopSpeedHack()
-    if speedConnection then
-        speedConnection:Disconnect()
-        speedConnection = nil
-    end
-end
-
--- UI
+-- 🖥️ UI
 local screenGui = Instance.new("ScreenGui", game.CoreGui)
 screenGui.Name = "SpeedHack_UI"
-screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
 local frame = Instance.new("Frame", screenGui)
-frame.Size = UDim2.new(0, 320, 0, 210)
+frame.Size = UDim2.new(0, 320, 0, 240)
 frame.Position = UDim2.new(0, 100, 0, 100)
 frame.BackgroundColor3 = Color3.fromRGB(24, 24, 24)
-frame.BorderSizePixel = 0
 frame.Active = true
 frame.Draggable = true
 Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 12)
 
-local closeButton = Instance.new("TextButton", frame)
-closeButton.Size = UDim2.new(0, 25, 0, 25)
-closeButton.Position = UDim2.new(1, -32, 0, 8)
-closeButton.Text = "x"
-closeButton.TextSize = 24
-closeButton.Font = Enum.Font.GothamBold
-closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-closeButton.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
-closeButton.BorderSizePixel = 2
-closeButton.BorderColor3 = Color3.fromRGB(255, 255, 255)
-Instance.new("UICorner", closeButton).CornerRadius = UDim.new(1, 0)
+local function createTextBtn(txt, parent, pos, bg)
+	local btn = Instance.new("TextButton", parent)
+	btn.Size = UDim2.new(0, 25, 0, 25)
+	btn.Position = pos
+	btn.Text = txt
+	btn.Font = Enum.Font.GothamBold
+	btn.TextSize = 20
+	btn.TextColor3 = Color3.new(1, 1, 1)
+	btn.BackgroundColor3 = bg
+	Instance.new("UICorner", btn).CornerRadius = UDim.new(1, 0)
+	return btn
+end
 
-closeButton.MouseButton1Click:Connect(function()
-    stopSpeedHack()
-    screenGui:Destroy()
-end)
+local closeButton = createTextBtn("x", frame, UDim2.new(1, -32, 0, 8), Color3.fromRGB(255, 50, 50))
+local minimizeButton = createTextBtn("-", frame, UDim2.new(1, -64, 0, 8), Color3.fromRGB(100, 100, 255))
 
-local minimizeButton = Instance.new("TextButton", frame)
-minimizeButton.Size = UDim2.new(0, 25, 0, 25)
-minimizeButton.Position = UDim2.new(1, -64, 0, 8)
-minimizeButton.Text = "-"
-minimizeButton.TextSize = 20
-minimizeButton.Font = Enum.Font.GothamBold
-minimizeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-minimizeButton.BackgroundColor3 = Color3.fromRGB(100, 100, 255)
-minimizeButton.BorderSizePixel = 2
-minimizeButton.BorderColor3 = Color3.fromRGB(255, 255, 255)
-Instance.new("UICorner", minimizeButton).CornerRadius = UDim.new(1, 0)
+closeButton.MouseButton1Click:Connect(function() screenGui:Destroy() end)
 
 local title = Instance.new("TextLabel", frame)
-title.Text = "⚡ SpeedHack วิ่งตีนแตก"
+title.Text = "⚡ SpeedHack & Noclip"
 title.Size = UDim2.new(1, -40, 0, 30)
 title.Position = UDim2.new(0, 16, 0, 12)
 title.BackgroundTransparency = 1
-title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.TextColor3 = Color3.new(1, 1, 1)
 title.Font = Enum.Font.GothamBold
 title.TextSize = 20
 title.TextXAlignment = Enum.TextXAlignment.Left
 
+-- 🛠️ ตัวแปร
+local speedEnabled, noclipEnabled = false, false
+local speedMultiplier = 11
+local hotkey, noclipHotkey = Enum.KeyCode.F, Enum.KeyCode.G
+local speedConnection, noclipConnection
+
+-- ✅ Create toggle
+local function createToggle(y, text, state, callback)
+	local label = Instance.new("TextLabel", frame)
+	label.Text = text
+	label.Position = UDim2.new(0, 16, 0, y)
+	label.Size = UDim2.new(0.7, 0, 0, 24)
+	label.BackgroundTransparency = 1
+	label.TextColor3 = Color3.fromRGB(200, 200, 200)
+	label.Font = Enum.Font.Gotham
+	label.TextSize = 14
+	label.TextXAlignment = Enum.TextXAlignment.Left
+
+	local toggle = Instance.new("TextButton", frame)
+	toggle.Position = UDim2.new(1, -60, 0, y)
+	toggle.Size = UDim2.new(0, 40, 0, 24)
+	toggle.BackgroundColor3 = state and Color3.fromRGB(46, 204, 113) or Color3.fromRGB(100, 100, 100)
+	toggle.Text = ""
+	toggle.BorderSizePixel = 0
+	Instance.new("UICorner", toggle).CornerRadius = UDim.new(1, 0)
+
+	local circle = Instance.new("Frame", toggle)
+	circle.Size = UDim2.new(0.5, -4, 1, -4)
+	circle.Position = state and UDim2.new(0.5, 2, 0, 2) or UDim2.new(0, 2, 0, 2)
+	circle.BackgroundColor3 = Color3.new(1, 1, 1)
+	circle.BorderSizePixel = 0
+	Instance.new("UICorner", circle).CornerRadius = UDim.new(1, 0)
+
+	toggle.MouseButton1Click:Connect(function()
+		state = not state
+		updateToggle(toggle, circle, state)
+		callback(state)
+	end)
+
+	return {Label = label, Button = toggle, Circle = circle}
+end
+
+-- 🔁 Toggle SpeedHack
+local speedToggle = createToggle(45, "เปิดโหมด SpeedHack", false, function(state)
+	speedEnabled = state
+	if state then
+		speedConnection = RunService.Heartbeat:Connect(function(dt)
+			if player.Character and player.Character:FindFirstChild("Humanoid") then
+				if player.Character.Humanoid.MoveDirection.Magnitude > 0 then
+					player.Character:TranslateBy(player.Character.Humanoid.MoveDirection * speedMultiplier * dt * 10)
+				end
+			end
+		end)
+	elseif speedConnection then speedConnection:Disconnect() speedConnection = nil end
+end)
+
+-- 🎚️ Slider
 local sliderLabel = Instance.new("TextLabel", frame)
 sliderLabel.Text = "ปรับค่า Speed"
-sliderLabel.Position = UDim2.new(0, 16, 0, 50)
+sliderLabel.Position = UDim2.new(0, 16, 0, 75)
 sliderLabel.Size = UDim2.new(1, -32, 0, 20)
 sliderLabel.BackgroundTransparency = 1
 sliderLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
@@ -87,16 +122,14 @@ sliderLabel.TextSize = 14
 sliderLabel.TextXAlignment = Enum.TextXAlignment.Left
 
 local sliderBar = Instance.new("Frame", frame)
-sliderBar.Position = UDim2.new(0, 16, 0, 75)
+sliderBar.Position = UDim2.new(0, 16, 0, 95)
 sliderBar.Size = UDim2.new(1, -32, 0, 8)
 sliderBar.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-sliderBar.BorderSizePixel = 0
 Instance.new("UICorner", sliderBar).CornerRadius = UDim.new(0, 4)
 
 local sliderFill = Instance.new("Frame", sliderBar)
-sliderFill.Size = UDim2.new((speedMultiplier - 1)/15, 0, 1, 0)
+sliderFill.Size = UDim2.new((speedMultiplier - 1) / 15, 0, 1, 0)
 sliderFill.BackgroundColor3 = Color3.fromRGB(46, 204, 113)
-sliderFill.BorderSizePixel = 0
 Instance.new("UICorner", sliderFill).CornerRadius = UDim.new(0, 4)
 
 local sliderKnob = Instance.new("TextButton", sliderBar)
@@ -104,171 +137,148 @@ sliderKnob.Size = UDim2.new(0, 14, 2, 0)
 sliderKnob.Position = UDim2.new((speedMultiplier - 1)/15, -7, -0.5, 0)
 sliderKnob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 sliderKnob.Text = ""
-sliderKnob.AutoButtonColor = false
 Instance.new("UICorner", sliderKnob).CornerRadius = UDim.new(1, 0)
 
 local valueLabel = Instance.new("TextLabel", frame)
 valueLabel.Text = tostring(speedMultiplier)
-valueLabel.Position = UDim2.new(0, 16, 0, 95)
+valueLabel.Position = UDim2.new(0, 16, 0, 110)
 valueLabel.Size = UDim2.new(1, -32, 0, 20)
 valueLabel.BackgroundTransparency = 1
-valueLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+valueLabel.TextColor3 = Color3.new(1, 1, 1)
 valueLabel.Font = Enum.Font.GothamBold
 valueLabel.TextSize = 16
 valueLabel.TextXAlignment = Enum.TextXAlignment.Left
 
-local toggleLabel = Instance.new("TextLabel", frame)
-toggleLabel.Text = "เปิดโหมด SpeedHack"
-toggleLabel.Position = UDim2.new(0, 16, 0, 125)
-toggleLabel.Size = UDim2.new(0.7, 0, 0, 24)
-toggleLabel.BackgroundTransparency = 1
-toggleLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-toggleLabel.Font = Enum.Font.Gotham
-toggleLabel.TextSize = 14
-toggleLabel.TextXAlignment = Enum.TextXAlignment.Left
-
-local toggle = Instance.new("TextButton", frame)
-toggle.Position = UDim2.new(1, -60, 0, 125)
-toggle.Size = UDim2.new(0, 40, 0, 24)
-toggle.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
-toggle.Text = ""
-toggle.BorderSizePixel = 0
-Instance.new("UICorner", toggle).CornerRadius = UDim.new(1, 0)
-
-local toggleCircle = Instance.new("Frame", toggle)
-toggleCircle.Size = UDim2.new(0.5, -4, 1, -4)
-toggleCircle.Position = UDim2.new(0, 2, 0, 2)
-toggleCircle.BackgroundColor3 = Color3.new(1, 1, 1)
-toggleCircle.BorderSizePixel = 0
-Instance.new("UICorner", toggleCircle).CornerRadius = UDim.new(1, 0)
-
-local keyBindLabel = Instance.new("TextLabel", frame)
-keyBindLabel.Text = "ตั้งค่าคีย์ลัด:"
-keyBindLabel.Position = UDim2.new(0, 16, 0, 155)
-keyBindLabel.Size = UDim2.new(0, 100, 0, 20)
-keyBindLabel.BackgroundTransparency = 1
-keyBindLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-keyBindLabel.Font = Enum.Font.Gotham
-keyBindLabel.TextSize = 14
-keyBindLabel.TextXAlignment = Enum.TextXAlignment.Left
-
-local keyBox = Instance.new("TextBox", frame)
-keyBox.Position = UDim2.new(0, 120, 0, 153)
-keyBox.Size = UDim2.new(0, 50, 0, 24)
-keyBox.PlaceholderText = "Key"
-keyBox.Text = "F"
-keyBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-keyBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-keyBox.ClearTextOnFocus = false
-keyBox.Font = Enum.Font.Gotham
-keyBox.TextSize = 14
-keyBox.BorderSizePixel = 0
-Instance.new("UICorner", keyBox).CornerRadius = UDim.new(0, 4)
-
-local applyKeyBtn = Instance.new("TextButton", frame)
-applyKeyBtn.Position = UDim2.new(0, 180, 0, 153)
-applyKeyBtn.Size = UDim2.new(0, 50, 0, 24)
-applyKeyBtn.Text = "Set"
-applyKeyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-applyKeyBtn.BackgroundColor3 = Color3.fromRGB(50, 150, 255)
-applyKeyBtn.Font = Enum.Font.GothamBold
-applyKeyBtn.TextSize = 14
-applyKeyBtn.BorderSizePixel = 0
-Instance.new("UICorner", applyKeyBtn).CornerRadius = UDim.new(0, 4)
-
-local function updateToggleUI()
-    if speedEnabled then
-        toggle.BackgroundColor3 = Color3.fromRGB(46, 204, 113)
-        toggleCircle:TweenPosition(UDim2.new(0.5, 2, 0, 2), "Out", "Quad", 0.2, true)
-    else
-        toggle.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
-        toggleCircle:TweenPosition(UDim2.new(0, 2, 0, 2), "Out", "Quad", 0.2, true)
-    end
-end
-
-toggle.MouseButton1Click:Connect(function()
-    speedEnabled = not speedEnabled
-    updateToggleUI()
-    if speedEnabled then
-        startSpeedHack()
-    else
-        stopSpeedHack()
-    end
-end)
-
-updateToggleUI()
-
--- 📦 Slider drag
 local dragging = false
 sliderKnob.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = true
-    end
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = true end
 end)
 UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = false
-    end
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
 end)
 UserInputService.InputChanged:Connect(function(input)
-    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-        local rel = (input.Position.X - sliderBar.AbsolutePosition.X) / sliderBar.AbsoluteSize.X
-        rel = math.clamp(rel, 0, 1)
-        local val = math.floor(1 + rel * 15 + 0.5)
-        speedMultiplier = val
-        sliderFill.Size = UDim2.new((val - 1) / 15, 0, 1, 0)
-        sliderKnob.Position = UDim2.new((val - 1) / 15, -7, -0.5, 0)
-        valueLabel.Text = tostring(val)
-    end
+	if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+		local rel = (input.Position.X - sliderBar.AbsolutePosition.X) / sliderBar.AbsoluteSize.X
+		rel = math.clamp(rel, 0, 1)
+		local val = math.floor(1 + rel * 15 + 0.5)
+		speedMultiplier = val
+		sliderFill.Size = UDim2.new((val - 1)/15, 0, 1, 0)
+		sliderKnob.Position = UDim2.new((val - 1)/15, -7, -0.5, 0)
+		valueLabel.Text = tostring(val)
+	end
 end)
 
--- 🪄 พับ UI และซ่อนส่วนอื่น
+-- 🔁 Toggle Noclip
+local noclipToggle = createToggle(135, "เปิดโหมด Noclip", false, function(state)
+	noclipEnabled = state
+	if state then
+		noclipConnection = RunService.Stepped:Connect(function()
+			pcall(function()
+				for _, part in pairs(player.Character:GetDescendants()) do
+					if part:IsA("BasePart") then part.CanCollide = false end
+				end
+			end)
+		end)
+	elseif noclipConnection then noclipConnection:Disconnect() noclipConnection = nil end
+end)
+
+-- ⌨️ Keybind
+local function createKeybind(labelText, y, defaultKey, onSet)
+	local label = Instance.new("TextLabel", frame)
+	label.Text = labelText
+	label.Position = UDim2.new(0, 16, 0, y)
+	label.Size = UDim2.new(0, 120, 0, 20)
+	label.BackgroundTransparency = 1
+	label.TextColor3 = Color3.fromRGB(200, 200, 200)
+	label.Font = Enum.Font.Gotham
+	label.TextSize = 14
+
+	local box = Instance.new("TextBox", frame)
+	box.Position = UDim2.new(0, 140, 0, y - 2)
+	box.Size = UDim2.new(0, 50, 0, 24)
+	box.Text = defaultKey.Name
+	box.ClearTextOnFocus = false
+	box.TextColor3 = Color3.new(1, 1, 1)
+	box.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+	Instance.new("UICorner", box).CornerRadius = UDim.new(0, 4)
+
+	local btn = Instance.new("TextButton", frame)
+	btn.Position = UDim2.new(0, 200, 0, y - 2)
+	btn.Size = UDim2.new(0, 50, 0, 24)
+	btn.Text = "Set"
+	btn.TextColor3 = Color3.new(1, 1, 1)
+	btn.BackgroundColor3 = Color3.fromRGB(50, 150, 255)
+	btn.Font = Enum.Font.GothamBold
+	btn.TextSize = 14
+	Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
+
+	btn.MouseButton1Click:Connect(function()
+		local keyText = box.Text:upper()
+		local code = Enum.KeyCode[keyText]
+		if code then onSet(code) box.Text = keyText else box.Text = defaultKey.Name end
+	end)
+end
+
+createKeybind("คีย์ลัด SpeedHack:", 165, hotkey, function(k) hotkey = k end)
+createKeybind("คีย์ลัด Noclip:", 192, noclipHotkey, function(k) noclipHotkey = k end)
+
+-- 🎧 Keybind Toggle
+UserInputService.InputBegan:Connect(function(input, gp)
+	if gp then return end
+	if input.KeyCode == hotkey then
+		speedEnabled = not speedEnabled
+		if speedEnabled then
+			speedConnection = RunService.Heartbeat:Connect(function(dt)
+				if player.Character and player.Character:FindFirstChild("Humanoid") then
+					if player.Character.Humanoid.MoveDirection.Magnitude > 0 then
+						player.Character:TranslateBy(player.Character.Humanoid.MoveDirection * speedMultiplier * dt * 10)
+					end
+				end
+			end)
+		elseif speedConnection then speedConnection:Disconnect() speedConnection = nil end
+		updateToggle(speedToggle.Button, speedToggle.Circle, speedEnabled)
+	elseif input.KeyCode == noclipHotkey then
+		noclipEnabled = not noclipEnabled
+		if noclipEnabled then
+			noclipConnection = RunService.Stepped:Connect(function()
+				pcall(function()
+					for _, part in pairs(player.Character:GetDescendants()) do
+						if part:IsA("BasePart") then part.CanCollide = false end
+					end
+				end)
+			end)
+		elseif noclipConnection then noclipConnection:Disconnect() noclipConnection = nil end
+		updateToggle(noclipToggle.Button, noclipToggle.Circle, noclipEnabled)
+	end
+end)
+
+-- 🧺 เก็บออบเจกต์ที่ต้องพับไว้ตรงนี้
+local elementsToToggle = {
+	sliderLabel, sliderBar, sliderFill, sliderKnob, valueLabel,
+	speedToggle.Label, speedToggle.Button, speedToggle.Circle,
+	noclipToggle.Label, noclipToggle.Button, noclipToggle.Circle,
+}
+
+for _, v in pairs(frame:GetChildren()) do
+	if v:IsA("TextLabel") or v:IsA("TextBox") or v:IsA("TextButton") then
+		if v ~= title and v ~= closeButton and v ~= minimizeButton then
+			table.insert(elementsToToggle, v)
+		end
+	end
+end
+
+-- 📦 พับ UI
 local isMinimized = false
 minimizeButton.MouseButton1Click:Connect(function()
-    isMinimized = not isMinimized
-    if isMinimized then
-        minimizeButton.Text = "+"
-        TweenService:Create(frame, TweenInfo.new(0.3), { Size = UDim2.new(0, 320, 0, 50) }):Play()
-    else
-        minimizeButton.Text = "-"
-        TweenService:Create(frame, TweenInfo.new(0.3), { Size = UDim2.new(0, 320, 0, 210) }):Play()
-    end
-    -- ซ่อน/แสดง UI ย่อย
-    sliderLabel.Visible = not isMinimized
-    sliderBar.Visible = not isMinimized
-    sliderFill.Visible = not isMinimized
-    sliderKnob.Visible = not isMinimized
-    valueLabel.Visible = not isMinimized
-    toggle.Visible = not isMinimized
-    toggleLabel.Visible = not isMinimized
-    keyBox.Visible = not isMinimized
-    keyBindLabel.Visible = not isMinimized
-    applyKeyBtn.Visible = not isMinimized
+	isMinimized = not isMinimized
+	TweenService:Create(frame, TweenInfo.new(0.3), {
+		Size = isMinimized and UDim2.new(0, 320, 0, 50) or UDim2.new(0, 320, 0, 240)
+	}):Play()
+
+	for _, obj in elementsToToggle do
+		if obj then obj.Visible = not isMinimized end
+	end
+
+	minimizeButton.Text = isMinimized and "+" or "-"
 end)
 
--- 🔑 Keybind
-local hotkey = Enum.KeyCode.F
-applyKeyBtn.MouseButton1Click:Connect(function()
-    local keyText = keyBox.Text:upper()
-    local keyCode = Enum.KeyCode[keyText]
-    if keyCode then
-        hotkey = keyCode
-        keyBox.Text = keyText
-    else
-        keyBox.Text = "F"
-        hotkey = Enum.KeyCode.F
-    end
-end)
-
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
-    if input.KeyCode == hotkey then
-        speedEnabled = not speedEnabled
-        updateToggleUI()
-        if speedEnabled then
-            startSpeedHack()
-        else
-            stopSpeedHack()
-        end
-    end
-end)
